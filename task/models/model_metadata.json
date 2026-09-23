@@ -1,0 +1,46 @@
+{
+  "model": "CatBoostRegressor",
+  "target": "power",
+  "features": [
+    "wind_speed",
+    "temperature",
+    "turbine",
+    "hour_sin",
+    "hour_cos",
+    "day_sin",
+    "day_cos"
+  ],
+  "categorical_features": [
+    "turbine"
+  ],
+  "training_period": {
+    "start": "2023-03-11T00:00:00",
+    "end": "2026-01-31T23:00:00"
+  },
+  "validation_period": {
+    "start": "2026-01-01T00:00:00",
+    "end": "2026-01-31T23:00:00"
+  },
+  "validation_metrics": {
+    "MAE": 0.02328763379887932,
+    "RMSE": 0.0554661664025121,
+    "R2": 0.9729860599689929
+  },
+  "turbine_metrics": {
+    "WT_1": {
+      "MAE": 0.022214877055056332,
+      "RMSE": 0.04721301307194033,
+      "R2": 0.9804077165308852
+    },
+    "WT_2": {
+      "MAE": 0.024360390542702302,
+      "RMSE": 0.06264122147157665,
+      "R2": 0.9655742008504693
+    }
+  },
+  "iterations": 220,
+  "power_range": [
+    0.0,
+    1.0
+  ]
+}
