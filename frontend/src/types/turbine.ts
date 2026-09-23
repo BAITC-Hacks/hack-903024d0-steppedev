@@ -1,3 +1,5 @@
+import type { MeasurementState, TelemetryMeasurement } from './telemetry'
+
 export interface Observation {
   timestamp: string
   power: number
@@ -14,6 +16,8 @@ export interface Turbine {
   forecastAt: string
   observed: number | null
   observedAt: string | null
+  telemetryState: MeasurementState
+  measurement: TelemetryMeasurement | null
   confidence: number
   status: 'normal' | 'deviation' | 'unknown'
   lastObservation: Observation | null

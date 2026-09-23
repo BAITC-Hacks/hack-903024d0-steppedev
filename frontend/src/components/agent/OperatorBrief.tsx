@@ -2,8 +2,9 @@ import { ArrowRight, Info, LoaderCircle, TriangleAlert } from 'lucide-react'
 import { useOperations } from '../../state/OperationsContext'
 import { useI18n } from '../../i18n/I18nContext'
 import { Button } from '../ui/button'
+import { telemetryLabel } from '../../types/telemetry'
 export function OperatorBrief() {
-  const { forecast, busy, error, setPage } = useOperations()
+  const { forecast, busy, error, setPage, telemetry } = useOperations()
   const { t } = useI18n()
   const stale = forecast?.stale || !!error
   const Icon = busy ? LoaderCircle : stale ? TriangleAlert : Info
@@ -24,7 +25,9 @@ export function OperatorBrief() {
               ? 'Forecast update in progress'
               : stale
                 ? 'Forecast update needs attention'
-                : 'Forecast ready · telemetry not connected',
+                : telemetry?.available
+                  ? 'Forecast and turbine readings available'
+                  : telemetryLabel(telemetry),
           )}
         </h2>
         <p>
@@ -33,12 +36,23 @@ export function OperatorBrief() {
               ? 'The backend is receiving weather and running the trained model. Follow the execution log.'
               : stale
                 ? 'The last published forecast is shown. Check its date before using it for operational decisions.'
-                : 'Power estimates use current weather and your trained model. Current turbine measurements are unavailable; operating state is not verified.',
+                : telemetry?.available
+                  ? 'Measured power is shown with its timestamp. The forecast covers future hours; turbine operating state still requires verification.'
+                  : 'The power forecast is ready. Connect a source of current turbine measurements to see actual output.',
           )}
         </p>
       </div>
-      <Button variant="outline" onClick={() => setPage(stale || busy ? 'agent' : 'forecast')}>
-        {t(stale || busy ? 'View update progress' : 'View 48-hour forecast')}
+      <Button
+        variant="outline"
+        onClick={() => setPage(stale || busy ? 'agent' : telemetry?.available ? 'twin' : 'diagnostics')}
+      >
+        {t(
+          stale || busy
+            ? 'View update progress'
+            : telemetry?.available
+              ? 'View digital twin'
+              : 'View connection details',
+        )}
         <ArrowRight size={14} />
       </Button>
     </section>

@@ -1,6 +1,7 @@
 import type { AgentEvent, AgentStatus } from './agent'
 import type { AppNotification, ForecastResponse } from './forecast'
 import type { Anomaly, Observation, Turbine } from './turbine'
+import type { TelemetrySnapshot } from './telemetry'
 export interface ValidationMetrics {
   MAE: number
   RMSE: number
@@ -31,10 +32,13 @@ export interface DiagnosticsData {
   archiveEnd: string
   telemetryAvailable: boolean
   llmConfigured: boolean
+  llmProvider: 'OpenAI' | 'NVIDIA' | null
+  llmModel: string | null
   intervalErrors: Record<string, number>
   refreshSeconds: number
 }
 export interface OperationsSnapshot {
+  telemetry: TelemetrySnapshot | null
   forecast: ForecastResponse | null
   turbines: Turbine[]
   anomalies: Anomaly[]

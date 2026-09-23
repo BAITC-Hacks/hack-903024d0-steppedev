@@ -5,13 +5,9 @@ requests
 tzdata
 catboost
 scikit-learn
-<<<<<<< HEAD
-fastapi
-uvicorn
-openai>=1.60.0
-=======
 fastapi>=0.115,<1
+pydantic>=2.9,<3
 uvicorn>=0.30,<1
 python-dotenv>=1,<2
 httpx>=0.27,<1
->>>>>>> faf5dfb93b1dc36ee053cf9e549945cd68d55e6e
+openai>=2,<3

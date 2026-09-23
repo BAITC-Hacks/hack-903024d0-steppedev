@@ -3,9 +3,11 @@ import { useI18n } from '../i18n/I18nContext'
 import { useOperations } from '../state/OperationsContext'
 import { Badge, LoadingState, Panel, PanelHeading } from '../components/ui/shared'
 import { ForecastConfidence } from '../components/confidence/ForecastConfidence'
+import { TelemetryStatus } from '../components/turbine/TelemetryStatus'
+import { telemetryLabel } from '../types/telemetry'
 export default function Diagnostics() {
   const { t, number, dateLabel } = useI18n()
-  const { diagnostics: data, forecast, agent, connected } = useOperations()
+  const { diagnostics: data, forecast, agent, connected, telemetry } = useOperations()
   if (!data) return <LoadingState label="Loading model and datasets" />
   const sections = [
     {
@@ -15,8 +17,8 @@ export default function Diagnostics() {
         ['Operations API', connected ? 'Connected' : 'Unavailable'],
         ['Weather API', agent.source],
         ['Historical Weather Archive', `${data.archiveRuns}`],
-        ['Current telemetry', 'Not connected'],
-        ['External language model', data.llmConfigured ? 'Configured' : 'Not configured'],
+        ['Current turbine readings', telemetryLabel(telemetry)],
+        ['External language model', data.llmConfigured ? `${data.llmProvider} · ${data.llmModel}` : 'Not configured'],
       ],
     },
     {
@@ -43,6 +45,7 @@ export default function Diagnostics() {
   ]
   return (
     <div className="space-y-5">
+      <TelemetryStatus setup />
       <div className="info-banner">
         <Info size={17} />
         <p>
@@ -145,7 +148,7 @@ export default function Diagnostics() {
             {forecast && <ForecastConfidence score={forecast.confidence} factors={forecast.factors} />}
             <p className="mt-5 text-xs leading-6 text-muted">
               {t(
-                'The score averages weather completeness, validation-based model quality and freshness. Unavailable telemetry and independent weather agreement each subtract 10 points. It is not a probability of forecast accuracy.',
+                'The score averages weather completeness, validation-based model quality and freshness. Unavailable turbine behaviour verification and independent weather agreement each subtract 10 points. Receiving measurements alone does not verify behaviour. This is not a probability of forecast accuracy.',
               )}
             </p>
           </div>

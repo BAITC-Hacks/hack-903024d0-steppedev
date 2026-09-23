@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from ..data.repository import ArtifactRepository, iso
+from ..data.telemetry import TelemetryStore
 from ..ml.inference import Forecaster
 from ..weather.runs import DELAY, fetch_live, window_from_snapshot
 
@@ -21,6 +22,8 @@ logger = logging.getLogger(__name__)
 class Runtime:
     def __init__(self, settings):
         self.settings = settings
+        self.telemetry = TelemetryStore(settings)
+        self.telemetry_signature = None
         self.lock = threading.RLock()
         self.model_lock = threading.RLock()
         self.stop = threading.Event()
@@ -72,12 +75,28 @@ class Runtime:
         return True
 
     def start(self):
+        self.check_telemetry()
         self.start_refresh()
         def monitor():
             while not self.stop.wait(15):
+                self.check_telemetry()
                 if pd.Timestamp.now(tz="UTC") >= self.next_refresh:
                     self.start_refresh()
         threading.Thread(target=monitor, daemon=True, name="windops-monitor").start()
+
+    def check_telemetry(self):
+        telemetry = self.telemetry.snapshot()
+        signature = (telemetry["status"], *(row["state"] for row in telemetry["readings"]))
+        with self.lock:
+            previous = self.telemetry_signature
+            self.telemetry_signature = signature
+        if signature == previous or (previous is None and not telemetry["freshCount"]):
+            return
+        title = "Current turbine readings available" if telemetry["available"] else "Turbine readings need attention"
+        detail = ("Fresh measurements are available for both turbines. Operating state still requires verification."
+                  if telemetry["available"] else "Check the measurement source and the timestamp of each turbine reading.")
+        self.emit("Twin Analysis", title, detail, "completed" if telemetry["available"] else "warning")
+        self.notify(title, detail, "Info" if telemetry["available"] else "Warning")
 
     def refresh(self):
         try:
@@ -89,7 +108,11 @@ class Runtime:
             forecast = self.calculate(snapshot, weather, origin, "live", source)
             self.emit("Forecast", "Forecast calculated", "Both turbines calculated with the trained weather model.")
             turbines = self.turbines(forecast)
-            self.emit("Twin Analysis", "Current telemetry unavailable", "Historical measurements are available; current turbine behaviour cannot be verified.", "warning")
+            telemetry = self.telemetry.snapshot()
+            if telemetry["available"]:
+                self.emit("Twin Analysis", "Current turbine readings available", "Fresh measurements are available for both turbines. Operating state still requires verification.")
+            else:
+                self.emit("Twin Analysis", "Current telemetry unavailable", "Check the measurement source and the timestamp of each turbine reading.", "warning")
             self.emit("Decision", "Forecast quality assessed", f"System confidence: {forecast['confidence']}/100. Unavailable checks are disclosed.")
             with self.lock:
                 previous = self.state["forecast"]
@@ -128,7 +151,8 @@ class Runtime:
         metadata = self.repository.metadata
         freshness = max(0, 100 - max(0, (origin - run - DELAY).total_seconds() / 3600 - 6) * 5)
         stability = 100 * (1 - metadata["validation_metrics"]["MAE"])
-        # Two unavailable factors each subtract 10; this is a documented operator indicator.
+        # Behaviour verification and independent weather agreement remain unmeasured.
+        # Receiving telemetry alone does not verify behaviour or improve confidence.
         confidence = max(0, round((100 + stability + freshness) / 3 - 20 - (10 if source == "Cached" else 0)))
         forecast_id = uuid4().hex
         records = []
@@ -211,10 +235,11 @@ class Runtime:
             similar = self.repository.similar_periods(record, code, pd.Timestamp(forecast["origin"]))
         return {"drivers": drivers, **similar, "method": "Local model contributions", "matchingRule": "Wind ±1.5 m/s, temperature ±4°C, direction ±45°; observations before forecast origin."}
 
-    def diagnostics(self):
+    def diagnostics(self, telemetry=None):
         if self.repository is None:
             return None
         meta = self.repository.metadata
+        telemetry = telemetry if telemetry is not None else self.telemetry.snapshot()
         return {"modelVersion": meta["version"], "modelType": meta["model"], "modelFingerprint": self.forecaster.fingerprint,
                 "features": len(meta["features"]), "trainingRows": meta["training_rows"], "decisionRuns": meta["decision_runs"],
                 "trainingStart": meta["training_target_period"]["start"], "trainingEnd": meta["training_target_period"]["end"],
@@ -222,16 +247,28 @@ class Runtime:
                 "turbineMetrics": meta["turbine_metrics"], "datasets": self.repository.datasets,
                 "archiveRuns": len(self.repository.archives), "archiveStart": iso(self.repository.archives[0][0] + DELAY),
                 "archiveEnd": iso(self.repository.archives[-1][0] + pd.Timedelta(hours=47)),
-                "telemetryAvailable": False, "llmConfigured": bool(self.settings.nvidia_key and self.settings.nvidia_model),
+                "telemetryAvailable": telemetry["available"], "llmConfigured": self.settings.llm_provider is not None,
+                "llmProvider": self.settings.llm_provider, "llmModel": self.settings.llm_model,
                 "intervalErrors": self.repository.interval_errors, "refreshSeconds": self.settings.refresh_seconds}
 
     def snapshot(self):
+        telemetry = self.telemetry.snapshot()
         with self.lock:
             snapshot = deepcopy(self.state)
+        snapshot["telemetry"] = telemetry
+        measurements = {item["turbineId"]: item for item in telemetry["readings"]}
+        for turbine in snapshot["turbines"]:
+            reading = measurements[turbine["id"]]
+            measurement = reading["measurement"]
+            fresh = reading["state"] == "fresh"
+            turbine.update(telemetryState=reading["state"], measurement=measurement,
+                           observed=measurement["power"] if fresh else None,
+                           observedAt=measurement["timestamp"] if fresh else None)
         snapshot["serverTime"] = iso(pd.Timestamp.now(tz="UTC"))
         snapshot["nextCheck"] = iso(self.next_refresh)
         if snapshot["forecast"]:
+            snapshot["forecast"]["telemetryAvailable"] = snapshot["forecast"]["mode"] == "live" and telemetry["available"]
             age = pd.Timestamp.now(tz="UTC") - pd.Timestamp(snapshot["forecast"]["issuedAt"])
             snapshot["forecast"]["stale"] = bool(snapshot["error"] or age.total_seconds() > self.settings.refresh_seconds * 1.5)
-        snapshot["diagnostics"] = self.diagnostics()
+        snapshot["diagnostics"] = self.diagnostics(telemetry)
         return snapshot

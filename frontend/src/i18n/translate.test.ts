@@ -48,4 +48,23 @@ describe('Operator localization', () => {
     expect(translate('14:42', 'kk')).toBe('14:42')
     expect(translate(' ', 'ru')).toBe(' ')
   })
+  it.each(['ru', 'kk'] as const)('translates telemetry states and measured power in %s', (locale) => {
+    const answer =
+      'Current measurements: WT-01 0% at 2026-09-23T12:00:00Z; WT-02 Unavailable at Unavailable. Receiving measurements alone does not confirm normal operation or an anomaly. Compare power only for matching times and averaging intervals.'
+    const translated = translate(answer, locale)
+    expect(translated).toContain('WT-01')
+    expect(translated).toContain('0%')
+    expect(translated).not.toMatch(/Current measurements|Unavailable|Receiving|\{\d+\}/)
+    for (const label of [
+      'Current turbine readings are not connected',
+      'Some turbine readings are unavailable',
+      'Turbine readings are out of date',
+      'FRESH READING',
+      'Wind',
+      'WAITING',
+    ]) {
+      expect(translate(label, locale)).not.toBe(label)
+      expect(translate(label, locale)).not.toMatch(/^\?+$/)
+    }
+  })
 })

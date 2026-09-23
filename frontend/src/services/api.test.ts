@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { forecastService, operationsService, replayService } from './api'
+import { copilotService, forecastService, operationsService, replayService } from './api'
 afterEach(() => vi.unstubAllGlobals())
 describe('Real API adapter', () => {
   it('uses the operations endpoint and returns its data unchanged', async () => {
@@ -29,5 +29,14 @@ describe('Real API adapter', () => {
     await forecastService.refresh()
     expect(fetch.mock.calls[0][0]).toBe('/api/forecast/refresh')
     expect(fetch.mock.calls[0][1].method).toBe('POST')
+  })
+  it('sends assistant context tied to the selected forecast and preserves fallback information', async () => {
+    const body = { answer: 'Based on forecast data', provider: 'Data analysis', fallback: true, notice: 'AI unavailable', forecastId: 'current' }
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(body)))
+    vi.stubGlobal('fetch', fetch)
+    const history = [{ role: 'user' as const, content: 'When is peak power?' }]
+    expect(await copilotService.ask('And WT-02?', 'ru', history, 'current')).toEqual(body)
+    expect(fetch.mock.calls[0][0]).toBe('/api/copilot')
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ question: 'And WT-02?', locale: 'ru', history, forecastId: 'current' })
   })
 })

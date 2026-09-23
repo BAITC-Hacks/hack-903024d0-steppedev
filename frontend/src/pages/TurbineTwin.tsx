@@ -4,12 +4,14 @@ import { useOperations } from '../state/OperationsContext'
 import { TurbineCard } from '../components/turbine/TurbineCard'
 import { Badge, Panel, PanelHeading } from '../components/ui/shared'
 import { ForecastChart } from '../components/charts/ForecastChart'
+import { TelemetryStatus } from '../components/turbine/TelemetryStatus'
 export default function TurbineTwin() {
   const { t, dateLabel } = useI18n()
-  const { turbines, forecast, anomalies } = useOperations()
+  const { turbines, forecast, anomalies, telemetry } = useOperations()
   if (!forecast) return null
   return (
     <div className="space-y-5">
+      <TelemetryStatus />
       <div className="grid gap-5 md:grid-cols-2">
         {turbines.map((turbine) => (
           <TurbineCard key={turbine.id} turbine={turbine} detailed />
@@ -24,10 +26,16 @@ export default function TurbineTwin() {
         <div className="flex gap-4 px-5 pb-6">
           <Info size={23} className="shrink-0 text-sky-300" />
           <div>
-            <h3 className="text-base font-medium">{t('Current telemetry unavailable')}</h3>
+            <h3 className="text-base font-medium">
+              {t(
+                telemetry?.available ? 'Operating state needs verification' : 'Current telemetry unavailable',
+              )}
+            </h3>
             <p className="mt-3 max-w-4xl text-sm leading-7 text-muted">
               {t(
-                'The chart compares expected power under forecast weather conditions. Historical measurements are dated separately. Without current measurements, the system cannot confirm normal operation or detect a current turbine deviation.',
+                telemetry?.freshCount
+                  ? 'Current readings and future forecasts refer to different times. Receiving measurements alone does not confirm normal operation or an anomaly.'
+                  : 'The chart compares expected power under forecast weather conditions. Historical measurements are dated separately. Without current measurements, the system cannot confirm normal operation or detect a current turbine deviation.',
               )}
             </p>
           </div>

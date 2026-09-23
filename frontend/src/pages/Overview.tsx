@@ -26,10 +26,11 @@ import { OperationsStatus } from '../components/agent/OperationsStatus'
 import { OperatorBrief } from '../components/agent/OperatorBrief'
 import { percent, timeLabel } from '../lib/utils'
 import type { ForecastRecord } from '../types/forecast'
+import { telemetryLabel } from '../types/telemetry'
 
 export default function Overview() {
   const { t, tx, dateLabel, number } = useI18n()
-  const { forecast, turbines, agent, events, busy, anomalies, setPage } = useOperations()
+  const { forecast, turbines, agent, events, busy, anomalies, setPage, telemetry } = useOperations()
   const [selected, setSelected] = useState<ForecastRecord | null>(null)
   const [hours, setHours] = useState(48)
   if (!forecast?.records.length) return null
@@ -92,10 +93,12 @@ export default function Overview() {
             <TriangleAlert size={15} />
           </div>
           <div className="kpi-number-row">
-            <strong className="metric-value text-amber-300">{attention}</strong>
-            <Badge tone="amber">{t('REVIEW')}</Badge>
+            <strong className={`metric-value ${attention ? 'text-amber-300' : 'text-emerald-300'}`}>
+              {attention}
+            </strong>
+            <Badge tone={attention ? 'amber' : 'green'}>{t(attention ? 'REVIEW' : 'NO ACTIVE ALERTS')}</Badge>
           </div>
-          <p className="kpi-caption">{t('Current telemetry unavailable')}</p>
+          <p className="kpi-caption">{t(telemetryLabel(telemetry))}</p>
         </Panel>
       </div>
       <p className="power-unit-note">
@@ -155,7 +158,11 @@ export default function Overview() {
         <Panel className="fleet-panel">
           <PanelHeading
             title={t('Wind farm status')}
-            action={<Badge tone="gray">{t('NO TELEMETRY')}</Badge>}
+            action={
+              <Badge tone={telemetry?.available ? 'blue' : 'gray'}>
+                {t(telemetry?.available ? 'RECEIVING DATA' : 'CHECK SOURCE')}
+              </Badge>
+            }
           />
           <div className="farm-visual-wrap">
             <div className="farm-coordinates">

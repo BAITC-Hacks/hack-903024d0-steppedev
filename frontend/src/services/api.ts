@@ -7,6 +7,7 @@ import type {
 import type { OperationsSnapshot, DiagnosticsData } from '../types/operations'
 import type { AgentEvent, AgentStatus } from '../types/agent'
 import type { Anomaly, Turbine } from '../types/turbine'
+import type { CopilotHistoryItem, CopilotResponse } from '../types/copilot'
 
 export class ApiError extends Error {
   constructor(
@@ -70,9 +71,9 @@ export const replayService = {
     request<ReplayResult>('/replay', { method: 'POST', body: JSON.stringify({ date, time }) }),
 }
 export const copilotService = {
-  ask: (question: string, locale: string) =>
-    request<{ answer: string; references: string[]; provider: string; forecastId: string }>('/copilot', {
+  ask: (question: string, locale: string, history: CopilotHistoryItem[] = [], forecastId?: string) =>
+    request<CopilotResponse>('/copilot', {
       method: 'POST',
-      body: JSON.stringify({ question, locale }),
+      body: JSON.stringify({ question, locale, history, forecastId }),
     }),
 }

@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const windows = process.platform === 'win32'
 const venv = path.join(root, 'backend', '.venv', windows ? 'Scripts/python.exe' : 'bin/python')
 const python = process.env.WINDOPS_PYTHON || (existsSync(venv) ? venv : windows ? 'python' : 'python3')
-const check = spawn(python, ['-c', 'import fastapi, uvicorn, catboost, pandas, requests, dotenv'], {
+const check = spawn(python, ['-c', 'import fastapi, uvicorn, catboost, pandas, requests, dotenv, openai'], {
   cwd: root,
   stdio: 'ignore',
   windowsHide: true,

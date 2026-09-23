@@ -31,7 +31,7 @@ test('dashboard displays predictions from the actual API and model explanations'
         0,
       ) / 6
   await expect(page.locator('.kpi-grid .metric-value').first()).toHaveText(`${Math.round(average * 100)}%`)
-  await expect(page.getByTestId('operator-brief')).toContainText('telemetry not connected')
+  await expect(page.getByTestId('operator-brief')).toContainText('Current turbine readings are not connected')
   await expect(page.locator('#demo-scenario')).toHaveCount(0)
   await expect(page.locator('body')).not.toContainText('DEMO')
   await page.locator('nav a[data-page="forecast"]').click()
@@ -96,7 +96,7 @@ test('Russian and Kazakh cover all six real-data pages and preserve language', a
     const text = language === 'ru' ? ru : kk
     await page.getByTestId('language-select').selectOption(language)
     await expect(page.getByTestId('operator-brief')).toContainText(
-      text['Forecast ready · telemetry not connected'],
+      text['Current turbine readings are not connected'],
     )
     for (const [route, title] of [
       ['forecast', 'Predicted power'],

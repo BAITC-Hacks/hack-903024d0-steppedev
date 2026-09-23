@@ -5,10 +5,9 @@ import { useOperations } from '../../state/OperationsContext'
 import { copilotService } from '../../services/api'
 import { Dialog } from '../ui/dialog'
 import { Button } from '../ui/button'
-interface Message {
+import type { CopilotHistoryItem, CopilotResponse } from '../../types/copilot'
+interface Message extends CopilotResponse {
   question: string
-  answer: string
-  references: string[]
 }
 const suggestedQuestions = [
   'Why does generation decrease tomorrow?',
@@ -28,8 +27,11 @@ export function Copilot() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const end = useRef<HTMLDivElement>(null)
+  const activeForecast = useRef(forecast?.id)
   useEffect(() => {
+    activeForecast.current = forecast?.id
     setMessages([])
+    setError('')
   }, [forecast?.id])
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -39,8 +41,16 @@ export function Copilot() {
     setSending(true)
     setError('')
     try {
-      const response = await copilotService.ask(question, locale)
-      setMessages((m) => [...m, { question, ...response }])
+      const history: CopilotHistoryItem[] = messages.slice(-6).flatMap((message) => [
+        { role: 'user', content: message.question.slice(0, 4000) },
+        { role: 'assistant', content: message.answer.slice(0, 4000) },
+      ])
+      const response = await copilotService.ask(question.trim(), locale, history, forecast.id)
+      if (response.forecastId !== activeForecast.current) {
+        setError('The forecast changed. Ask again using the latest data.')
+        return
+      }
+      setMessages((m) => [...m, { question: question.trim(), ...response }])
       setInput('')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'The assistant is temporarily unavailable.')
@@ -78,7 +88,7 @@ export function Copilot() {
                 className="suggested-question"
                 key={q}
                 disabled={sending || !forecast}
-                onClick={() => void ask(q)}
+                onClick={() => void ask(translateText(q))}
               >
                 {tx(q)}
                 <ArrowUpRight size={13} />
@@ -90,13 +100,15 @@ export function Copilot() {
           {tx(
             messages.map((m, i) => (
               <div key={i}>
-                <p className="mb-3 rounded-lg bg-white/5 p-3 text-sm">{tx(m.question)}</p>
+                <p className="mb-3 rounded-lg bg-white/5 p-3 text-sm">{m.question}</p>
                 <div className="border-l-2 border-emerald-300/40 pl-4">
                   <span className="mb-2 flex items-center gap-1.5 text-[10px] font-medium text-emerald-300">
                     <Sparkles size={11} />
                     {translateText('WINDOPS AI')}
+                    <span className="ml-auto text-muted" data-testid="copilot-provider">{translateText(m.provider)}</span>
                   </span>
-                  <p className="text-xs leading-6 text-[#a8b5c0]">{tx(m.answer)}</p>
+                  <p className="whitespace-pre-line text-xs leading-6 text-[#a8b5c0]" data-testid="copilot-answer">{tx(m.answer)}</p>
+                  {m.notice && <p role="status" className="mt-2 text-xs leading-5 text-amber-300">{translateText(m.notice)}</p>}
                   <div className="mt-3 flex flex-wrap gap-2">
                     {tx(
                       m.references.map((r) => (
@@ -107,7 +119,7 @@ export function Copilot() {
                             setPage(
                               r === 'Diagnostics'
                                 ? 'diagnostics'
-                                : r === 'Twin comparison'
+                                : r === 'Twin comparison' || r === 'Current turbine readings'
                                   ? 'twin'
                                   : r === 'Agent event log'
                                     ? 'agent'
@@ -139,6 +151,7 @@ export function Copilot() {
             aria-label={translateText('Ask WindOps AI')}
             placeholder={translateText('Ask about your wind farm…')}
             value={input}
+            maxLength={2000}
             onChange={(e) => setInput(e.target.value)}
           />
           <Button
@@ -149,13 +162,16 @@ export function Copilot() {
             {sending ? <LoaderCircle size={17} className="animate-spin" /> : <ArrowUp size={17} />}
           </Button>
         </form>
+        {sending && <p role="status" className="mt-3 text-xs text-muted">{translateText('Thinking about the forecast…')}</p>}
         {error && (
           <p className="mt-3 text-xs text-amber-300" role="alert">
             {translateText(error)}
           </p>
         )}
         <p className="mt-3 text-center text-[10px] text-muted">
-          {translateText('Answers reference the published forecast. Current telemetry is unavailable.')}
+          {translateText(
+            'Answers use the published forecast and available measurements with their timestamps.',
+          )}
         </p>
       </Dialog>
     </>

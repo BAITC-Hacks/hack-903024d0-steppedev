@@ -21,7 +21,7 @@ class RealArtifactTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temporary = tempfile.TemporaryDirectory()
-        cls.settings = replace(settings, storage_dir=Path(cls.temporary.name), nvidia_key='', nvidia_model='')
+        cls.settings = replace(settings, storage_dir=Path(cls.temporary.name), openai_key='', nvidia_key='', nvidia_model='')
         cls.runtime = Runtime(cls.settings)
         cls.runtime.initialize()
         cls.repository = cls.runtime.repository

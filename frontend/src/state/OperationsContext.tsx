@@ -15,6 +15,7 @@ interface OperationsState extends OperationsSnapshot {
 }
 const OperationsContext = createContext<OperationsState | null>(null)
 const initial: OperationsSnapshot = {
+  telemetry: null,
   forecast: null,
   turbines: [],
   anomalies: [],
@@ -73,7 +74,28 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
               source: 'Unavailable',
               task: 'Connecting to the operations API',
             },
-            forecast: previous.forecast ? { ...previous.forecast, stale: true } : null,
+            telemetry: previous.telemetry
+              ? {
+                  ...previous.telemetry,
+                  available: false,
+                  freshCount: 0,
+                  status: 'error',
+                  error: 'Cannot connect to the operations API. Check that the backend is running.',
+                  readings: previous.telemetry.readings.map((reading) => ({
+                    ...reading,
+                    state: 'unavailable',
+                  })),
+                }
+              : null,
+            turbines: previous.turbines.map((turbine) => ({
+              ...turbine,
+              observed: null,
+              observedAt: null,
+              telemetryState: 'unavailable',
+            })),
+            forecast: previous.forecast
+              ? { ...previous.forecast, stale: true, telemetryAvailable: false }
+              : null,
           }))
       } finally {
         if (!stopped) {

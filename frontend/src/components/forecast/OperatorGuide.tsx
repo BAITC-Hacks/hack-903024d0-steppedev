@@ -7,7 +7,7 @@ export function OperatorGuide() {
     {
       icon: GitCompareArrows,
       title: 'Expected vs. observed',
-      text: 'Expected power is the forecast. Observed power is the latest measurement. Compare them under similar wind conditions.',
+      text: 'Expected power is a forecast for its stated time. Observed power is a measurement with its own timestamp. A valid comparison requires matching times and averaging intervals.',
     },
     {
       icon: ChartNoAxesCombined,
@@ -39,7 +39,7 @@ export function OperatorGuide() {
       <p className="guide-note">{t('Power is shown as a percentage of rated output, not energy in MWh.')}</p>
       <p className="text-xs leading-6 text-muted">
         {t(
-          'All operational timestamps use UTC. Forecast weather is live; current turbine telemetry is not connected. Historical measurements always show their date.',
+          'All operational timestamps use UTC. Current turbine readings require a connected measurement source. Historical and outdated measurements always show their date.',
         )}
       </p>
     </div>

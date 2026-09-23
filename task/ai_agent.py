@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from dotenv import load_dotenv
 from openai import OpenAI
 
 
@@ -15,6 +16,12 @@ from openai import OpenAI
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
+ROOT = BASE_DIR.parent
+load_dotenv(ROOT / "backend" / ".env")
+STORAGE_DIR = Path(os.getenv("WINDOPS_STORAGE_DIR") or "storage").expanduser()
+if not STORAGE_DIR.is_absolute():
+    STORAGE_DIR = ROOT / STORAGE_DIR
+BACKEND_FORECAST_PATH = STORAGE_DIR / "forecasts" / "latest.json"
 
 FORECAST_PATH = (
     BASE_DIR
@@ -35,7 +42,7 @@ ANALYSIS_PATH = (
 # OPENAI
 # ============================================================
 
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "").strip() or "gpt-5.4-mini"
 
 
 # ============================================================
@@ -45,17 +52,50 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 def load_forecast() -> dict:
 
     if not FORECAST_PATH.exists():
-
-        raise FileNotFoundError(
-            f"Live forecast не найден:\n"
-            f"{FORECAST_PATH.resolve()}"
-        )
+        if not BACKEND_FORECAST_PATH.exists():
+            raise FileNotFoundError(
+                "Live forecast не найден. Запустите npm run dev и дождитесь расчёта прогноза.\n"
+                f"Проверены: {FORECAST_PATH} и {BACKEND_FORECAST_PATH}"
+            )
+        return adapt_backend_forecast(json.loads(BACKEND_FORECAST_PATH.read_text(encoding="utf-8")))
 
     return json.loads(
         FORECAST_PATH.read_text(
             encoding="utf-8"
         )
     )
+
+
+def adapt_backend_forecast(forecast: dict) -> dict:
+    """Use the published CatBoost predictions without recalculating power."""
+    if forecast.get("mode") != "live":
+        raise ValueError("Для live-анализа требуется текущий, а не архивный прогноз.")
+    issued = pd.Timestamp(forecast["issuedAt"])
+    now = pd.Timestamp.now(tz="UTC")
+    refresh = max(300, int(os.getenv("WINDOPS_REFRESH_SECONDS") or 3600))
+    if issued.tzinfo is None or issued > now or (now - issued).total_seconds() > refresh * 1.5:
+        raise ValueError("Прогноз устарел или имеет неверное время. Обновите прогноз в приложении.")
+    records = sorted(forecast["records"], key=lambda row: pd.Timestamp(row["timestamp"]))
+    times = [pd.Timestamp(row["timestamp"]) for row in records]
+    if len(times) != 48 or any(time.tzinfo is None for time in times):
+        raise ValueError("Ожидались 48 часов прогноза с часовым поясом.")
+    if any(right - left != pd.Timedelta(hours=1) for left, right in zip(times, times[1:])):
+        raise ValueError("Часы прогноза должны идти подряд без пропусков и повторов.")
+    rows = []
+    for horizon, record in enumerate(records, start=1):
+        weather = {
+            "wind_speed_120m": record["windSpeed120m"],
+            "wind_gusts_10m": record["gusts"],
+            "temperature_2m": record["temperature"],
+            "wind_direction_120m": record["windDirection"],
+        }
+        for turbine, key in (("WT_1", "WT01"), ("WT_2", "WT02")):
+            rows.append({"turbine": turbine, "time": record["timestamp"],
+                         "forecast_horizon_hour": horizon,
+                         "predicted_power": record[key]["prediction"], "weather": dict(weather)})
+    return {"generated_at_utc": forecast["issuedAt"], "weather_model": forecast["source"],
+            "weather_run_utc": forecast["weatherRun"], "power_model": forecast["modelVersion"],
+            "horizon_hours": 48, "forecast_id": forecast["id"], "forecasts": rows}
 
 
 # ============================================================
@@ -528,6 +568,8 @@ def call_openai_agent(
     client = OpenAI(
         base_url="https://api.openai.com/v1",
         api_key=api_key,
+        timeout=60.0,
+        max_retries=0,
     )
 
     system_prompt = """
@@ -672,6 +714,9 @@ def analyze_live_forecast() -> dict:
     validation = validate_forecast(
         forecast
     )
+
+    if not validation["valid"]:
+        raise ValueError("Некорректный прогноз: " + " ".join(validation["warnings"]))
 
     context = build_agent_context(
         forecast

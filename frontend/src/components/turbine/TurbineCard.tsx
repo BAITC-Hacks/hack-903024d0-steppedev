@@ -14,6 +14,8 @@ export function TurbineCard({
   detailed?: boolean
 }) {
   const { t: translateText, tx, dateLabel } = useI18n()
+  const fresh = turbine.telemetryState === 'fresh'
+  const outdated = turbine.telemetryState === 'stale'
 
   return (
     <div className={`turbine-card ${turbine.status === 'deviation' ? 'is-warning' : ''}`}>
@@ -24,16 +26,17 @@ export function TurbineCard({
           />
           {tx(detailed ? turbine.name : turbine.id)}
         </span>
-        <Badge
-          tone={turbine.status === 'unknown' ? 'gray' : turbine.status === 'deviation' ? 'amber' : 'green'}
-          dot
-        >
+        <Badge tone={turbine.status === 'deviation' || outdated ? 'amber' : fresh ? 'blue' : 'gray'} dot>
           {tx(
-            turbine.status === 'unknown'
-              ? 'NO TELEMETRY'
-              : turbine.status === 'deviation'
-                ? 'DEVIATION'
-                : 'NORMAL',
+            turbine.status === 'deviation'
+              ? 'DEVIATION'
+              : fresh
+                ? 'FRESH READING'
+                : outdated
+                  ? 'OUT OF DATE'
+                  : turbine.telemetryState === 'unavailable'
+                    ? 'UNAVAILABLE'
+                    : 'NO READING',
           )}
         </Badge>
       </div>
@@ -52,6 +55,17 @@ export function TurbineCard({
         </div>
         <TurbineVisual warning={turbine.status === 'deviation'} />
       </div>
+      {!detailed && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <span className="text-muted">{translateText('Observed power')}</span>
+          <span>
+            {tx(percent(turbine.observed))}
+            {turbine.observedAt && (
+              <time className="ml-2 text-[10px] text-muted">{timeLabel(turbine.observedAt)} UTC</time>
+            )}
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between border-t border-white/5 pt-3 text-[10px] text-muted">
         <span className="flex items-center gap-1">
           <Compass size={11} />
@@ -90,6 +104,32 @@ export function TurbineCard({
             </div>
           </div>
         ),
+      )}
+      {detailed && turbine.measurement && (
+        <div
+          className={`mt-4 rounded-lg border p-3 text-xs leading-6 ${fresh ? 'border-sky-300/20' : 'border-amber-300/20'} text-muted`}
+        >
+          <p>{translateText(fresh ? 'Current turbine readings' : 'Last received reading')}</p>
+          <time>
+            {dateLabel(turbine.measurement.timestamp)}{' '}
+            {new Date(turbine.measurement.timestamp).getUTCFullYear()} ·{' '}
+            {timeLabel(turbine.measurement.timestamp)} UTC
+          </time>
+          <p>
+            {translateText('Observed power')}: {tx(percent(turbine.measurement.power))}
+          </p>
+          {turbine.measurement.windSpeed !== null && (
+            <p>
+              {translateText('Measured wind')}: {tx(turbine.measurement.windSpeed.toFixed(1))}{' '}
+              {translateText('m/s')}
+            </p>
+          )}
+          {!fresh && (
+            <p className="text-amber-300">
+              {translateText('This reading is not available as current telemetry.')}
+            </p>
+          )}
+        </div>
       )}
       {detailed && turbine.lastObservation && (
         <div className="mt-4 rounded-lg border border-white/10 p-3 text-xs leading-6 text-muted">
