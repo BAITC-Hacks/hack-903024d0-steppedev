@@ -1,6 +1,60 @@
 # WindOps Python backend
 
-Python-код разделён по назначению. Это существующие скрипты проекта, организованные в пакет; HTTP-сервер пока не реализован.
+Python-код разделён по назначению. Существующие скрипты организованы в пакет. FastAPI-сервер для live-прогноза находится в корневом `main.py` и использует корневой `forecast_live.py`.
+
+## Live forecast API
+
+Из корня репозитория:
+
+```powershell
+python -m pip install -r backend/requirements.txt
+python -m uvicorn main:app --reload
+```
+
+Swagger: http://127.0.0.1:8000/docs. Для прогноза нужна модель
+`models/catboost_weather.cbm`. Результаты сохраняются в
+`predictions/live/forecast_live.csv` и `predictions/live/forecast_live.json`.
+Эти пути привязаны к расположению `forecast_live.py`.
+
+| Метод | Маршрут | Результат |
+| --- | --- | --- |
+| GET | `/api/status` | Состояние сервера и наличие прогноза |
+| GET | `/api/forecast/latest` | Последний сохранённый прогноз для обеих турбин |
+| GET | `/api/forecast/latest/WT_1` | Прогноз первой турбины |
+| GET | `/api/forecast/latest/WT_2` | Прогноз второй турбины |
+| POST | `/api/recalculate` | Полный цикл: ECMWF → CatBoost → OpenAI-анализ |
+| POST | `/api/analysis/recalculate` | Анализ последнего сохранённого прогноза через OpenAI |
+| GET | `/api/analysis/latest` | Последний сохранённый AI-анализ |
+
+`GET /api/analysis/latest` возвращает содержимое
+`predictions/live/analysis_live.json`, включая `analysis.summary`,
+`analysis.trend_24h`, `analysis.trend_48h`, риски и рекомендации.
+Запрос не вызывает OpenAI. Если файла нет, возвращается 404;
+если файл повреждён или недоступен — 500. Для создания или обновления
+анализа задайте `OPENAI_API_KEY` и запустите `python ai_agent.py` из корня.
+Время исходного прогноза указано в `forecast_generated_at_utc`.
+`POST /api/recalculate` обновляет прогноз, затем анализ; отдельный
+`POST /api/analysis/recalculate` обновляет только анализ. Полный цикл возвращает
+`forecast_count`, `power_model`, `agent`, `analysis_summary` и `recalculate`.
+Поле `recalculate` — рекомендация агента, автоматический повтор не запускается.
+При сбое OpenAI запрос возвращает 500; уже записанный новый прогноз сохраняется,
+а прежний анализ может относиться к предыдущему прогнозу.
+
+Перед запуском Uvicorn задайте `$env:OPENAI_API_KEY = "ваш_ключ"`
+в том же терминале. Если сервер уже работает, перезапустите его из этого
+терминала: переменная из другого PowerShell ему не передаётся.
+
+GET читает сохранённый JSON. Если прогноз ещё не создан, общий маршрут
+прогноза возвращает 404; вызовите POST `/api/recalculate`, которому нужен
+доступ к Open-Meteo и OpenAI. Пересчёт выполняется в пуле потоков.
+CORS разрешает `http://localhost:5173` и `http://127.0.0.1:5173`.
+
+```javascript
+const response = await fetch('http://localhost:8000/api/forecast/latest');
+if (!response.ok) throw new Error(`Forecast API: ${response.status}`);
+const data = await response.json();
+console.log(data.forecasts);
+```
 
 ```text
 backend/

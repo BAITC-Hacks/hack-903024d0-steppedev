@@ -5,3 +5,6 @@ requests
 tzdata
 catboost
 scikit-learn
+fastapi
+uvicorn
+openai>=1.60.0
