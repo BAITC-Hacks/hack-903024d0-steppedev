@@ -11,7 +11,7 @@ export interface AgentEvent {
 export interface AgentStatus {
   active: boolean
   task: string
-  state: 'Monitoring' | 'Recovering' | 'Processing'
+  state: 'Monitoring' | 'Recovering' | 'Processing' | 'Waiting'
   stage: AgentStage | null
-  source: 'Primary' | 'Backup'
+  source: 'Primary' | 'Previous run' | 'Cached' | 'Archive' | 'Unavailable'
 }

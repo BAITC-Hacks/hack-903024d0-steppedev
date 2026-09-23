@@ -64,7 +64,6 @@ catboost_info/
 /storage/**
 !/storage/**/
 !/storage/**/.gitkeep
-!/storage/README.md
 /backend/build/
 /backend/dist/
 

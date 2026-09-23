@@ -4,6 +4,8 @@
   --font-sans: 'Inter', 'Segoe UI', Arial, sans-serif;
   --color-muted: #7f8e9b;
 }
+
+/* Operator readability and space for Russian and Kazakh labels. */
 :root {
   font-family: var(--font-sans);
   color: #e5ebef;
@@ -440,37 +442,7 @@ main {
   margin-left: 3px;
   font-size: 8px;
 }
-.scenario-select {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 11px;
-  min-width: 177px;
-  border: 1px solid #2c393e;
-  border-radius: 8px;
-  background: #131e23;
-  color: #98b8aa;
-}
-.scenario-select label {
-  font-size: 7px;
-  color: #728c80;
-  display: block;
-  letter-spacing: 1.3px;
-  margin-bottom: 4px;
-}
-.scenario-select select {
-  appearance: none;
-  border: none;
-  font-size: 10px;
-  color: #bdd6c9;
-  background: transparent;
-  width: 142px;
-  outline: none;
-}
-.scenario-select select option {
-  background: #13211d;
-  color: #c4dacf;
-}
+
 .panel {
   border: 1px solid #26313b;
   background: #111a22;
@@ -1777,15 +1749,11 @@ tr:hover td {
     order: 2;
     font-size: 8px;
   }
-  .scenario-select {
-    padding: 8px 10px;
-  }
+
   .scenario-select label {
     font-size: 6px;
   }
-  .scenario-select select {
-    font-size: 9px;
-  }
+
   .kpi-grid {
     gap: 11px;
   }

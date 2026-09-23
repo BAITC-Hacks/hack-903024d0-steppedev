@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/I18nContext'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -18,6 +19,8 @@ export function Dialog({
   children: ReactNode
   drawer?: boolean
 }) {
+  const { t: translateText, tx } = useI18n()
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -31,20 +34,20 @@ export function Dialog({
           )}
         >
           <DialogPrimitive.Title className="pr-8 text-xl font-semibold text-white">
-            {title}
+            {tx(title)}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description
             className={cn('mt-2 text-sm text-[#8593a1]', !description && 'sr-only')}
           >
-            {description || title}
+            {tx(description || title)}
           </DialogPrimitive.Description>
           <DialogPrimitive.Close
             className="absolute right-4 top-4 rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white"
-            aria-label="Close panel"
+            aria-label={translateText('Close panel')}
           >
             <X size={18} />
           </DialogPrimitive.Close>
-          <div className="mt-6">{children}</div>
+          <div className="mt-6">{tx(children)}</div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

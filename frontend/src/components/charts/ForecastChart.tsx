@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/I18nContext'
 import {
   Area,
   CartesianGrid,
@@ -10,7 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import type { ForecastRecord } from '../../types/forecast'
-import { dateLabel, percent, timeLabel } from '../../lib/utils'
+import { percent, timeLabel } from '../../lib/utils'
 import { MousePointer2 } from 'lucide-react'
 
 export function ForecastChart({
@@ -18,16 +19,16 @@ export function ForecastChart({
   height = 245,
   turbine = 'both',
   onSelect,
-  observed,
   historical = false,
 }: {
   records: ForecastRecord[]
   height?: number
   turbine?: 'both' | 'WT01' | 'WT02'
   onSelect?: (record: ForecastRecord) => void
-  observed?: number[]
   historical?: boolean
 }) {
+  const { t: translateText, tx, dateLabel } = useI18n()
+
   const data = records.map((r, i) => ({
     ...r,
     hour: i,
@@ -35,24 +36,25 @@ export function ForecastChart({
     p2: r.WT02.prediction * 100,
     range1: [r.WT01.lower * 100, r.WT01.upper * 100],
     range2: [r.WT02.lower * 100, r.WT02.upper * 100],
-    observed: (observed?.[i] ?? 0) * 100,
   }))
   const nextDay = records.findIndex((r, i) => i > 0 && timeLabel(r.timestamp) === '00:00')
   return (
     <div className="forecast-chart">
       <div className="mb-4 flex items-center justify-between px-1 text-[9px] text-muted">
-        <span>NORMALIZED POWER (%)</span>
+        <span>{translateText('NORMALIZED POWER (%)')}</span>
         <span className="flex items-center gap-1.5">
-          {onSelect && (
-            <>
-              <MousePointer2 size={11} />
-              Click a point to explore
-            </>
+          {tx(
+            onSelect && (
+              <>
+                <MousePointer2 size={11} />
+                {translateText('Click a point to explore')}
+              </>
+            ),
           )}
         </span>
       </div>
       <div className="mb-1 ml-9 text-[8px] tracking-wider text-muted">
-        {historical ? dateLabel(records[0].timestamp).toUpperCase() : 'TODAY'}
+        {dateLabel(records[0].timestamp).toUpperCase()}
       </div>
       <div style={{ width: '100%', height, minWidth: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -92,125 +94,130 @@ export function ForecastChart({
                 return (
                   <div className="chart-tooltip">
                     <p className="mb-3 border-b border-white/10 pb-2 text-xs font-semibold">
-                      {dateLabel(r.timestamp)} · {timeLabel(r.timestamp)} UTC
+                      {tx(dateLabel(r.timestamp))} · {tx(timeLabel(r.timestamp))}
+                      {translateText(' UTC')}
                     </p>
-                    {(['WT01', 'WT02'] as const)
-                      .filter((key) => turbine === 'both' || turbine === key)
-                      .map((key) => (
-                        <div key={key} className="mb-3">
-                          <p className={key === 'WT01' ? 'text-emerald-300' : 'text-sky-300'}>
-                            {key === 'WT01' ? 'WT-01' : 'WT-02'}
-                          </p>
-                          <div className="tooltip-row">
-                            <span>Expected power</span>
-                            <b>{percent(r[key].prediction)}</b>
+                    {tx(
+                      (['WT01', 'WT02'] as const)
+                        .filter((key) => turbine === 'both' || turbine === key)
+                        .map((key) => (
+                          <div key={key} className="mb-3">
+                            <p className={key === 'WT01' ? 'text-emerald-300' : 'text-sky-300'}>
+                              {tx(key === 'WT01' ? 'WT-01' : 'WT-02')}
+                            </p>
+                            <div className="tooltip-row">
+                              <span>{translateText('Expected power')}</span>
+                              <b>{tx(percent(r[key].prediction))}</b>
+                            </div>
+                            <div className="tooltip-row">
+                              <span>{translateText('Expected range')}</span>
+                              <b>
+                                {tx(percent(r[key].lower))}–{tx(percent(r[key].upper))}
+                              </b>
+                            </div>
                           </div>
-                          <div className="tooltip-row">
-                            <span>Expected range</span>
-                            <b>
-                              {percent(r[key].lower)}–{percent(r[key].upper)}
-                            </b>
-                          </div>
-                        </div>
-                      ))}
+                        )),
+                    )}
                     <div className="space-y-1 border-t border-white/10 pt-2">
-                      {[
-                        ['Wind 120m', `${r.windSpeed120m} m/s`],
-                        ['Wind direction', `${r.windDirection}°`],
-                        ['Gusts', `${r.gusts} m/s`],
-                        ['Temperature', `${r.temperature}°C`],
-                      ].map(([label, value]) => (
-                        <div key={label} className="tooltip-row">
-                          <span>{label}</span>
-                          <b>{value}</b>
-                        </div>
-                      ))}
+                      {tx(
+                        [
+                          ['Wind 120m', `${r.windSpeed120m} m/s`],
+                          ['Wind direction', `${r.windDirection}°`],
+                          ['Gusts', `${r.gusts} m/s`],
+                          ['Temperature', `${r.temperature}°C`],
+                        ].map(([label, value]) => (
+                          <div key={label} className="tooltip-row">
+                            <span>{tx(label)}</span>
+                            <b>{tx(value)}</b>
+                          </div>
+                        )),
+                      )}
                     </div>
                   </div>
                 )
               }}
             />
-            {turbine !== 'WT02' && (
-              <Area
-                type="monotone"
-                dataKey="range1"
-                stroke="none"
-                fill="#7be4b5"
-                fillOpacity={0.11}
-                isAnimationActive={false}
-                tooltipType="none"
-              />
+            {tx(
+              turbine !== 'WT02' && (
+                <Area
+                  type="monotone"
+                  dataKey="range1"
+                  stroke="none"
+                  fill="#7be4b5"
+                  fillOpacity={0.11}
+                  isAnimationActive={false}
+                  tooltipType="none"
+                />
+              ),
             )}
-            {turbine !== 'WT01' && (
-              <Area
-                type="monotone"
-                dataKey="range2"
-                stroke="none"
-                fill="#68b8ef"
-                fillOpacity={0.08}
-                isAnimationActive={false}
-                tooltipType="none"
-              />
+            {tx(
+              turbine !== 'WT01' && (
+                <Area
+                  type="monotone"
+                  dataKey="range2"
+                  stroke="none"
+                  fill="#68b8ef"
+                  fillOpacity={0.08}
+                  isAnimationActive={false}
+                  tooltipType="none"
+                />
+              ),
             )}
-            {nextDay > 0 && (
-              <ReferenceLine
-                x={nextDay}
-                stroke="#48535b"
-                strokeDasharray="3 5"
-                label={{
-                  value: historical ? dateLabel(records[nextDay].timestamp).toUpperCase() : 'TOMORROW',
-                  fill: '#65737e',
-                  fontSize: 8,
-                  position: 'insideTopRight',
-                }}
-              />
+            {tx(
+              nextDay > 0 && (
+                <ReferenceLine
+                  x={nextDay}
+                  stroke="#48535b"
+                  strokeDasharray="3 5"
+                  label={{
+                    value: dateLabel(records[nextDay].timestamp).toUpperCase(),
+                    fill: '#65737e',
+                    fontSize: 8,
+                    position: 'insideTopRight',
+                  }}
+                />
+              ),
             )}
             <ReferenceLine
               x={0}
               stroke="#74d6ab"
               strokeDasharray="3 4"
               label={{
-                value: historical ? 'ORIGIN' : 'NOW',
+                value: translateText(historical ? 'ARCHIVE START' : 'FORECAST START'),
                 fill: '#89d5b3',
                 fontSize: 8,
-                position: 'insideTopRight',
+                position: 'insideTopLeft',
+                offset: 8,
               }}
             />
-            {turbine !== 'WT02' && (
-              <Line
-                name="WT-01"
-                type="monotone"
-                dataKey="p1"
-                stroke="#89e8b9"
-                strokeWidth={2.3}
-                dot={false}
-                activeDot={{ r: 5, stroke: '#11261f', strokeWidth: 3 }}
-                isAnimationActive={false}
-              />
+            {tx(
+              turbine !== 'WT02' && (
+                <Line
+                  name="WT-01"
+                  type="monotone"
+                  dataKey="p1"
+                  stroke="#89e8b9"
+                  strokeWidth={2.3}
+                  dot={false}
+                  activeDot={{ r: 5, stroke: '#11261f', strokeWidth: 3 }}
+                  isAnimationActive={false}
+                />
+              ),
             )}
-            {turbine !== 'WT01' && (
-              <Line
-                name="WT-02"
-                type="monotone"
-                dataKey="p2"
-                stroke="#67b6eb"
-                strokeWidth={2}
-                strokeDasharray="5 4"
-                dot={false}
-                activeDot={{ r: 5 }}
-                isAnimationActive={false}
-              />
-            )}
-            {observed && (
-              <Line
-                name="WT-02 deviation illustration"
-                type="monotone"
-                dataKey="observed"
-                stroke="#e9b968"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
+            {tx(
+              turbine !== 'WT01' && (
+                <Line
+                  name="WT-02"
+                  type="monotone"
+                  dataKey="p2"
+                  stroke="#67b6eb"
+                  strokeWidth={2}
+                  strokeDasharray="5 4"
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                  isAnimationActive={false}
+                />
+              ),
             )}
           </ComposedChart>
         </ResponsiveContainer>
@@ -219,24 +226,18 @@ export function ForecastChart({
         <div className="flex flex-wrap items-center gap-4">
           <span hidden={turbine === 'WT02'}>
             <i className="legend-line bg-[#89e8b9]" />
-            WT-01
+            {translateText('WT-01')}
           </span>
           <span hidden={turbine === 'WT01'}>
             <i className="legend-line bg-[#67b6eb]" />
-            WT-02
+            {translateText('WT-02')}
           </span>
           <span>
             <i className="legend-band" />
-            Expected range
+            {translateText('Expected range')}
           </span>
-          {observed && (
-            <span>
-              <i className="legend-line bg-amber-300" />
-              WT-02 deviation illustration
-            </span>
-          )}
         </div>
-        <span>All times UTC</span>
+        <span>{translateText('All times UTC')}</span>
       </div>
     </div>
   )

@@ -1,3 +1,9 @@
+export interface Observation {
+  timestamp: string
+  power: number
+  wind: number
+  temperature: number
+}
 export interface Turbine {
   id: 'WT-01' | 'WT-02'
   name: string
@@ -5,9 +11,12 @@ export interface Turbine {
   direction: number
   temperature: number
   expected: number
-  observed: number
+  forecastAt: string
+  observed: number | null
+  observedAt: string | null
   confidence: number
-  status: 'normal' | 'deviation'
+  status: 'normal' | 'deviation' | 'unknown'
+  lastObservation: Observation | null
 }
 export interface Anomaly {
   id: string
@@ -16,4 +25,5 @@ export interface Anomaly {
   title: string
   duration: string
   active: boolean
+  end?: string
 }
