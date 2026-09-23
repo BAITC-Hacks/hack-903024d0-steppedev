@@ -1,6 +1,76 @@
-node_modules
-dist
+# JavaScript dependencies, builds and caches
+node_modules/
+dist/
+/build/
+.vite/
+.cache/
+.npm/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+*.bak
+*~
+/tmp/
+/temp/
+
+# Local environment variables and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.template
 *.local
-test-results
-playwright-report
-.test-artifacts
+
+# Test output and browser authentication state
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+playwright/.auth/
+.test-artifacts/
+.nyc_output/
+blob-report/
+
+# Python environments, bytecode and tooling caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+ENV/
+__pypackages__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+
+# Generated weather API responses and forecasts
+/weather_snapshots/
+catboost_info/
+
+# Local editor settings (keep shared extension recommendations)
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+.history/
+
+# Operating system metadata
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
