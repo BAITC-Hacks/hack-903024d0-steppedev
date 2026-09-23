@@ -1,0 +1,110 @@
+{
+  "model": "CatBoostRegressor",
+  "version": "weather_v2",
+  "target": "power",
+  "features": [
+    "turbine",
+    "temperature_2m",
+    "relative_humidity_2m",
+    "surface_pressure",
+    "wind_speed_10m",
+    "wind_speed_80m",
+    "wind_speed_120m",
+    "wind_gusts_10m",
+    "wind_direction_10m_sin",
+    "wind_direction_10m_cos",
+    "wind_direction_80m_sin",
+    "wind_direction_80m_cos",
+    "wind_direction_120m_sin",
+    "wind_direction_120m_cos",
+    "wind_shear_80_10",
+    "wind_shear_120_80",
+    "wind_shear_120_10",
+    "wind_speed_80m_cubed",
+    "wind_speed_120m_cubed",
+    "forecast_horizon_hour",
+    "lead_from_run_hours",
+    "hour_sin",
+    "hour_cos",
+    "day_sin",
+    "day_cos"
+  ],
+  "categorical_features": [
+    "turbine"
+  ],
+  "forbidden_features": [
+    "actual_wind_speed",
+    "actual_temperature"
+  ],
+  "weather_source": "ECMWF IFS via Open-Meteo Single Runs API",
+  "training_rows": 60118,
+  "decision_runs": 666,
+  "training_target_period": {
+    "start": "2024-04-02T00:00:00",
+    "end": "2026-01-31T23:00:00"
+  },
+  "split": {
+    "type": "purged_time_split",
+    "train_decision_end": "2026-01-18",
+    "purged_decision_date": "2026-01-19",
+    "validation_decision_start": "2026-01-20"
+  },
+  "validation_metrics": {
+    "MAE": 0.1828468046338307,
+    "MAE_percent_nominal": 18.284680463383072,
+    "RMSE": 0.23798805971462678,
+    "RMSE_percent_nominal": 23.798805971462677,
+    "R2": 0.5818367727543403
+  },
+  "turbine_metrics": {
+    "WT_1": {
+      "MAE": 0.1787770602134024,
+      "MAE_percent_nominal": 17.877706021340238,
+      "RMSE": 0.23232234810646146,
+      "RMSE_percent_nominal": 23.232234810646148,
+      "R2": 0.5981892174005041
+    },
+    "WT_2": {
+      "MAE": 0.18691654905425903,
+      "MAE_percent_nominal": 18.691654905425903,
+      "RMSE": 0.2435219901852103,
+      "RMSE_percent_nominal": 24.35219901852103,
+      "R2": 0.5656733947409276
+    }
+  },
+  "horizon_metrics": {
+    "H01_12": {
+      "MAE": 0.1819522645383179,
+      "MAE_percent_nominal": 18.19522645383179,
+      "RMSE": 0.23588363670834597,
+      "RMSE_percent_nominal": 23.588363670834596,
+      "R2": 0.5252245406220988
+    },
+    "H13_24": {
+      "MAE": 0.1807947456625677,
+      "MAE_percent_nominal": 18.07947456625677,
+      "RMSE": 0.2343331312133702,
+      "RMSE_percent_nominal": 23.433313121337022,
+      "R2": 0.6362812811140532
+    },
+    "H25_36": {
+      "MAE": 0.20387430045597596,
+      "MAE_percent_nominal": 20.387430045597597,
+      "RMSE": 0.25814889937513674,
+      "RMSE_percent_nominal": 25.814889937513673,
+      "R2": 0.3478413058225207
+    },
+    "H37_48": {
+      "MAE": 0.1647659078784613,
+      "MAE_percent_nominal": 16.476590787846128,
+      "RMSE": 0.2221695423934593,
+      "RMSE_percent_nominal": 22.216954239345927,
+      "R2": 0.66967128437461
+    }
+  },
+  "iterations": 217,
+  "prediction_range": [
+    0.0,
+    1.0
+  ]
+}
