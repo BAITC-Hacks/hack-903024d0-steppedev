@@ -1,5 +1,7 @@
 # WindOps AI
 
+![WindOps AI dashboard demo](gif/firefox_EHElEHU6R6.gif)
+
 **Agentic AI Wind Farm Forecasting Platform** — Predict. Understand. Act.
 
 Responsive operator dashboard built with React, Vite, TypeScript, Tailwind CSS, shadcn-style Radix UI components, Lucide, Recharts, and Framer Motion.
@@ -27,6 +29,10 @@ On Windows PowerShell with script execution disabled, use `npm.cmd` instead of `
 6. Click a forecast point for **Why this forecast?**, switch turbine, or inspect similar historical periods. **Ask WindOps AI** explains the displayed data.
 
 Other scenarios include increased forecast uncertainty and historical mode. Forecast tables support CSV export. Notifications, settings, keyboard-accessible dialogs, mobile navigation, and reduced motion are implemented.
+
+The interface supports **English, Русский, and Қазақша**. Use the language selector in the header or settings; the choice is saved on the device. On first use, the interface follows a supported browser language, falling back to English. Switching languages preserves the active scenario, forecasts, event history, and copilot conversation.
+
+The overview starts with an operator brief: station condition, recommended action, and a shortcut to the relevant screen. Power is explicitly distinguished from energy, and the operator guide explains expected versus observed output, forecast ranges, confidence, and UTC timestamps. See [localization and operator interface](docs/LOCALIZATION.md) for maintenance details.
 
 ## Data and backend integration
 
@@ -84,3 +90,5 @@ npm.cmd run test:e2e
 ```
 
 Unit checks cover data bounds, 48 consecutive forecast hours, uncertainty changes, deviation consistency, copilot grounding, and historical origin validation. Browser checks exercise the demo flow, CSV download, explanations, recovery, replay, notifications, mobile navigation, and overflow at mobile, tablet, and desktop widths.
+
+Localization checks cover translation catalog parity, dynamic copilot responses, Russian and Kazakh question matching, language persistence, state preservation, and all six pages on mobile.
