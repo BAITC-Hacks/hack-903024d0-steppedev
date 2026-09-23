@@ -1,38 +1,43 @@
-import { CircleCheck, Database, Gauge, Info, Layers3, Server, ShieldCheck } from 'lucide-react'
+import { Database, Gauge, Info, Layers3, Server, ShieldCheck } from 'lucide-react'
+import { useI18n } from '../i18n/I18nContext'
 import { useOperations } from '../state/OperationsContext'
-import { Badge, Panel, PanelHeading } from '../components/ui/shared'
+import { Badge, LoadingState, Panel, PanelHeading } from '../components/ui/shared'
 import { ForecastConfidence } from '../components/confidence/ForecastConfidence'
 export default function Diagnostics() {
-  const { scenario, forecast } = useOperations()
+  const { t, number, dateLabel } = useI18n()
+  const { diagnostics: data, forecast, agent, connected } = useOperations()
+  if (!data) return <LoadingState label="Loading model and datasets" />
   const sections = [
     {
       title: 'Data sources',
       icon: Server,
       rows: [
-        ['Weather API', scenario === 'api-failure' ? 'Backup connected' : 'Connected'],
-        ['Historical Weather Archive', 'Connected'],
-        ['Turbine Dataset', 'Loaded'],
-        ['Environment', 'Simulated data services'],
+        ['Operations API', connected ? 'Connected' : 'Unavailable'],
+        ['Weather API', agent.source],
+        ['Historical Weather Archive', `${data.archiveRuns}`],
+        ['Current telemetry', 'Not connected'],
+        ['External language model', data.llmConfigured ? 'Configured' : 'Not configured'],
       ],
     },
     {
       title: 'Model',
       icon: Layers3,
       rows: [
-        ['Model version', 'v1.4'],
-        ['Model type', 'Gradient Boosting'],
+        ['Model version', data.modelVersion],
+        ['Model type', data.modelType],
         ['Forecast horizon', '48 hours'],
-        ['Last validation', 'Passed · example'],
+        ['Input features', String(data.features)],
+        ['Training rows', number(data.trainingRows, 0)],
       ],
     },
     {
       title: 'Dataset',
       icon: Database,
       rows: [
-        ['WT-01', '142k+ records'],
-        ['WT-02', '149k+ records'],
+        ...data.datasets.map((item) => [item.id, number(item.records, 0)]),
         ['Resolution', '10 minutes'],
-        ['Training range', 'Mar 2023 – Jan 2026'],
+        ['Training start', dateLabel(data.trainingStart)],
+        ['Training cutoff', dateLabel(data.trainingEnd) + ' ' + new Date(data.trainingEnd).getUTCFullYear()],
       ],
     },
   ]
@@ -41,21 +46,23 @@ export default function Diagnostics() {
       <div className="info-banner">
         <Info size={17} />
         <p>
-          <b>Technical workspace.</b> Configuration, dataset sizes, and model validation below are
-          illustrative demo values. No live model metrics have been calculated.
+          {t(
+            'Metrics below are read from the trained model metadata. Weather-model validation errors are used; sensor-based training scores are not substituted.',
+          )}
         </p>
       </div>
       <div className="grid gap-5 lg:grid-cols-3">
-        {sections.map((s) => (
-          <Panel key={s.title}>
-            <PanelHeading title={s.title} icon={<s.icon size={16} className="text-sky-300" />} />
+        {sections.map((section) => (
+          <Panel key={section.title}>
+            <PanelHeading
+              title={t(section.title)}
+              icon={<section.icon size={16} className="text-sky-300" />}
+            />
             <div className="space-y-5 px-5 pb-6">
-              {s.rows.map(([label, value]) => (
+              {section.rows.map(([label, value]) => (
                 <div key={label} className="flex items-start justify-between gap-4 text-xs">
-                  <span className="text-muted">{label}</span>
-                  <span className={['Connected', 'Loaded'].includes(value) ? 'text-emerald-300' : ''}>
-                    {value}
-                  </span>
+                  <span className="text-muted">{t(label)}</span>
+                  <span className="text-right">{t(value)}</span>
                 </div>
               ))}
             </div>
@@ -64,76 +71,105 @@ export default function Diagnostics() {
       </div>
       <Panel>
         <PanelHeading
-          title="Validation metrics"
-          subtitle="Demo metrics / validation example"
+          title={t('Validation metrics')}
+          subtitle={t('Purged time split · validation from ') + data.validationStart}
           icon={<Gauge size={16} className="text-sky-300" />}
-          action={<Badge tone="amber">EXAMPLE VALUES</Badge>}
+          action={<Badge tone="blue">{t('FROM MODEL FILE')}</Badge>}
         />
         <div className="grid gap-5 px-5 pb-6 md:grid-cols-3">
           {[
             {
               name: 'Mean absolute error',
-              value: '4.2',
+              value: number(data.metrics.MAE * 100, 2),
               unit: 'pp',
               detail: 'MAE · normalized power percentage points',
             },
             {
               name: 'Root mean squared error',
-              value: '6.1',
+              value: number(data.metrics.RMSE * 100, 2),
               unit: 'pp',
               detail: 'RMSE · normalized power percentage points',
             },
             {
-              name: 'Expected range coverage',
-              value: '89.6',
-              unit: '%',
-              detail: 'Example coverage of the nominal 90% interval',
+              name: 'Coefficient of determination',
+              value: number(data.metrics.R2, 3),
+              unit: '',
+              detail: 'R² · validation set',
             },
-          ].map((m) => (
-            <div key={m.name} className="rounded-xl border border-white/5 bg-white/[.015] p-5">
-              <p className="text-xs text-muted">{m.name}</p>
+          ].map((metric) => (
+            <div key={metric.name} className="rounded-xl border border-white/5 bg-white/[.015] p-5">
+              <p className="text-xs text-muted">{t(metric.name)}</p>
               <p className="my-4 text-4xl font-medium">
-                {m.value}
-                <span className="ml-2 text-base text-muted">{m.unit}</span>
+                {metric.value}
+                <span className="ml-2 text-base text-muted">{t(metric.unit)}</span>
               </p>
-              <p className="text-[10px] text-muted">{m.detail}</p>
+              <p className="text-[10px] text-muted">{t(metric.detail)}</p>
             </div>
           ))}
+        </div>
+        <div className="table-scroll px-5 pb-6">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th>{t('Turbine')}</th>
+                <th>MAE ({t('pp')})</th>
+                <th>RMSE ({t('pp')})</th>
+                <th>R²</th>
+                <th>
+                  {t('Range half-width')} ({t('pp')})
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(data.turbineMetrics).map(([key, metrics]) => (
+                <tr key={key}>
+                  <td>{key === 'WT_1' ? 'WT-01' : 'WT-02'}</td>
+                  <td>{number(metrics.MAE * 100, 2)}</td>
+                  <td>{number(metrics.RMSE * 100, 2)}</td>
+                  <td>{number(metrics.R2, 3)}</td>
+                  <td>{number(data.intervalErrors[key] * 100, 2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </Panel>
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel>
           <PanelHeading
-            title="Forecast confidence"
-            subtitle="Operator-facing system health indicator"
+            title={t('Forecast confidence')}
+            subtitle={t('Operator-facing system health indicator')}
             icon={<ShieldCheck size={16} />}
           />
           <div className="px-5 pb-6">
             {forecast && <ForecastConfidence score={forecast.confidence} factors={forecast.factors} />}
             <p className="mt-5 text-xs leading-6 text-muted">
-              Combines weather data completeness, source availability, agreement between sources, model
-              uncertainty, turbine consistency, and data freshness. It does not represent the probability that
-              a prediction is true.
+              {t(
+                'The score averages weather completeness, validation-based model quality and freshness. Unavailable telemetry and independent weather agreement each subtract 10 points. It is not a probability of forecast accuracy.',
+              )}
             </p>
           </div>
         </Panel>
         <Panel>
           <PanelHeading
-            title="Integration readiness"
-            subtitle="Service contracts prepared for the forecasting backend"
+            title={t('Data provenance')}
+            subtitle={t('Loaded artifacts and operational limits')}
           />
-          <div className="space-y-3 px-5 pb-6 text-xs text-muted">
-            {[
-              'Typed forecast, weather, and turbine contracts',
-              'Separate agent status and event history services',
-              'Historical replay request and provenance response',
-              'Scenario fixtures isolated from presentation components',
-            ].map((t) => (
-              <p key={t} className="flex items-center gap-2">
-                <CircleCheck size={13} className="text-emerald-300" />
-                {t}
-              </p>
-            ))}
+          <div className="space-y-4 px-5 pb-6 text-xs leading-6 text-muted">
+            <p>
+              {t('Model')}: <span className="text-white">catboost_weather.cbm</span>
+            </p>
+            <p className="break-all">SHA-256: {data.modelFingerprint}</p>
+            <p>
+              {t(
+                'Weather availability is estimated as run initialization plus 6 hours 10 minutes. It is not a verified publication timestamp.',
+              )}
+            </p>
+            <p>
+              {t(
+                'Expected ranges use the model validation errors. They are not a guarantee of future coverage.',
+              )}
+            </p>
           </div>
         </Panel>
       </div>

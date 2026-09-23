@@ -1,4 +1,3 @@
-export type Scenario = 'normal' | 'weather-update' | 'deviation' | 'api-failure' | 'uncertainty' | 'replay'
 export type Page = 'overview' | 'forecast' | 'twin' | 'agent' | 'replay' | 'diagnostics'
 export interface PowerForecast {
   prediction: number
@@ -8,6 +7,7 @@ export interface PowerForecast {
 }
 export interface ForecastRecord {
   timestamp: string
+  forecastId: string
   windSpeed10m: number
   windSpeed80m: number
   windSpeed120m: number
@@ -19,20 +19,33 @@ export interface ForecastRecord {
   WT02: PowerForecast
 }
 export interface ConfidenceFactors {
-  weatherData: number
-  modelStability: number
-  twinConsistency: number
-  dataFreshness: number
-  forecastAgreement: number
+  weatherData: number | null
+  modelStability: number | null
+  twinConsistency: number | null
+  dataFreshness: number | null
+  forecastAgreement: number | null
 }
 export interface ForecastResponse {
+  id: string
   records: ForecastRecord[]
   confidence: number
   factors: ConfidenceFactors
   source: string
+  sourceState: 'Primary' | 'Previous run' | 'Cached' | 'Archive'
   issuedAt: string
+  origin: string
   nextUpdate: string
-  scenario: Scenario
+  mode: 'live' | 'historical'
+  weatherRun: string
+  weatherAvailableAt: string
+  availabilityEstimated: boolean
+  modelVersion: string
+  modelFingerprint: string
+  trainingCutoff: string
+  telemetryAvailable: boolean
+  intervalMethod: string
+  changeSincePrevious: number | null
+  stale?: boolean
 }
 export interface AppNotification {
   id: string
@@ -46,5 +59,19 @@ export interface ReplayResult {
   forecast: ForecastResponse
   origin: string
   weatherIssuedAt: string
+  weatherAvailableAt: string
+  trainingCutoff: string
   leakageCheck: boolean
+  availabilityEstimated: boolean
+  logs: string[]
+}
+export interface ForecastExplanationData {
+  drivers: { label: string; note: string; value: number; negative: boolean; contribution: number }[]
+  historicalCount: number
+  historicalAverage: number | null
+  historicalLower: number | null
+  historicalUpper: number | null
+  periods: { timestamp: string; power: number }[]
+  method: string
+  matchingRule: string
 }

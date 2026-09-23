@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/I18nContext'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ForecastRecord } from '../../types/forecast'
 import { timeLabel } from '../../lib/utils'
@@ -8,6 +9,8 @@ export const windSeries: { key: WindKey; label: string; color: string }[] = [
   { key: 'windSpeed120m', label: '120m', color: '#87e4b8' },
 ]
 export function WindChart({ records, selected }: { records: ForecastRecord[]; selected: WindKey[] }) {
+  const { t: translateText, tx } = useI18n()
+
   return (
     <div className="h-52 w-full min-w-0">
       <ResponsiveContainer>
@@ -21,7 +24,12 @@ export function WindChart({ records, selected }: { records: ForecastRecord[]; se
             tickLine={false}
             tick={{ fill: '#778692', fontSize: 10 }}
           />
-          <YAxis unit=" m/s" tick={{ fill: '#778692', fontSize: 9 }} axisLine={false} tickLine={false} />
+          <YAxis
+            unit={translateText(' m/s')}
+            tick={{ fill: '#778692', fontSize: 9 }}
+            axisLine={false}
+            tickLine={false}
+          />
           <Tooltip
             labelFormatter={(v) => `${timeLabel(String(v))} UTC`}
             contentStyle={{
@@ -30,21 +38,26 @@ export function WindChart({ records, selected }: { records: ForecastRecord[]; se
               borderRadius: 10,
               fontSize: 11,
             }}
-            formatter={(value: number, name: string) => [`${value.toFixed(1)} m/s`, name]}
+            formatter={(value: number, name: string) => [
+              translateText(`${value.toFixed(1)} m/s`),
+              translateText(name),
+            ]}
           />
-          {windSeries
-            .filter((s) => selected.includes(s.key))
-            .map((s) => (
-              <Line
-                key={s.key}
-                name={`Wind ${s.label}`}
-                dataKey={s.key}
-                stroke={s.color}
-                dot={false}
-                strokeWidth={2}
-                isAnimationActive={false}
-              />
-            ))}
+          {tx(
+            windSeries
+              .filter((s) => selected.includes(s.key))
+              .map((s) => (
+                <Line
+                  key={s.key}
+                  name={translateText(`Wind ${s.label}`)}
+                  dataKey={s.key}
+                  stroke={s.color}
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+              )),
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>

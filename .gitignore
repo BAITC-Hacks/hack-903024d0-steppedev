@@ -64,9 +64,11 @@ catboost_info/
 /storage/**
 !/storage/**/
 !/storage/**/.gitkeep
-!/storage/README.md
 /backend/build/
 /backend/dist/
+
+# Original research package: local datasets, model binaries and weather archives
+/task/
 
 # Local editor settings (keep shared extension recommendations)
 .idea/

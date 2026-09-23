@@ -1,3 +1,4 @@
+import { useI18n } from './i18n/I18nContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import { OperationsProvider, useOperations } from './state/OperationsContext'
@@ -37,7 +38,7 @@ const pages = {
   replay: {
     component: HistoricalReplay,
     title: 'Historical Replay',
-    description: 'Reproduce forecasting exactly as it would have happened in the past.',
+    description: 'Recalculate forecasts using archived weather and a checked model training cutoff.',
   },
   diagnostics: {
     component: Diagnostics,
@@ -46,6 +47,8 @@ const pages = {
   },
 }
 function Workspace() {
+  const { t: translateText, tx } = useI18n()
+
   const { page, loading, error, refresh, busy, forecast } = useOperations()
   const [menu, setMenu] = useState(false)
   const Page = pages[page].component
@@ -56,51 +59,58 @@ function Workspace() {
     )
   }, [])
   useEffect(() => {
-    document.title = `${pages[page].title} · WindOps AI`
-  }, [page])
+    document.title = `${translateText(pages[page].title)} · WindOps AI`
+  }, [page, translateText])
   return (
     <MotionConfig reducedMotion="user">
       <div className="app-shell">
         <a className="skip-link" href="#main-content">
-          Skip to main content
+          {translateText('Skip to main content')}
         </a>
         <Sidebar open={menu} onClose={() => setMenu(false)} />
         <div className="workspace">
           <Header onMenu={() => setMenu(true)} />
           <main id="main-content">
-            <PageHeading title={pages[page].title} description={pages[page].description} />
-            {error && (
-              <div role="alert" className="warning-banner mb-5">
-                <p>{error}</p>
-                <Button onClick={() => void refresh()} disabled={busy} variant="outline">
-                  Try again
-                </Button>
-              </div>
+            <PageHeading
+              title={translateText(pages[page].title)}
+              description={translateText(pages[page].description)}
+            />
+            {tx(
+              error && (
+                <div role="alert" className="warning-banner mb-5">
+                  <p>{tx(error)}</p>
+                  <Button onClick={() => void refresh()} disabled={busy} variant="outline">
+                    {translateText('Try again')}
+                  </Button>
+                </div>
+              ),
             )}
-            {loading ? (
-              <LoadingState />
-            ) : ['overview', 'forecast', 'twin'].includes(page) && !forecast?.records.length ? (
-              <div className="replay-empty" role="status">
-                <p>No forecast available yet.</p>
-                <span>The agent needs weather data to prepare the next forecast.</span>
-                <Button onClick={() => void refresh()} disabled={busy} variant="outline">
-                  {busy ? 'Preparing forecast…' : 'Refresh Forecast'}
-                </Button>
-              </div>
-            ) : (
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={page}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.16 }}
-                >
-                  <Suspense fallback={<LoadingState label="Preparing workspace…" />}>
-                    <Page />
-                  </Suspense>
-                </motion.div>
-              </AnimatePresence>
+            {tx(
+              loading ? (
+                <LoadingState />
+              ) : ['overview', 'forecast', 'twin'].includes(page) && !forecast?.records.length ? (
+                <div className="replay-empty" role="status">
+                  <p>{translateText('No forecast available yet.')}</p>
+                  <span>{translateText('The agent needs weather data to prepare the next forecast.')}</span>
+                  <Button onClick={() => void refresh()} disabled={busy} variant="outline">
+                    {tx(busy ? 'Preparing forecast…' : 'Refresh Forecast')}
+                  </Button>
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={page}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.16 }}
+                  >
+                    <Suspense fallback={<LoadingState label="Preparing workspace…" />}>
+                      <Page />
+                    </Suspense>
+                  </motion.div>
+                </AnimatePresence>
+              ),
             )}
           </main>
         </div>
