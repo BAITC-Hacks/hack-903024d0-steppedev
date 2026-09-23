@@ -60,6 +60,14 @@ htmlcov/
 /weather_snapshots/
 catboost_info/
 
+# Large local datasets, trained models, exports and weather archives
+/storage/**
+!/storage/**/
+!/storage/**/.gitkeep
+!/storage/README.md
+/backend/build/
+/backend/dist/
+
 # Local editor settings (keep shared extension recommendations)
 .idea/
 .vscode/*

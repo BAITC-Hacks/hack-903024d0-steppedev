@@ -1,5 +1,7 @@
 # WindOps AI — проверка исходного ТЗ
 
+После этого аудита frontend перенесён в `frontend/`, Python-модули — в `backend/`. Актуальные пути и команды описаны в [ARCHITECTURE.md](ARCHITECTURE.md).
+
 Проверена реализация frontend demo, включая код, production-сборку и взаимодействия в браузере.
 
 | Требование                                                                          | Результат                                                                           |

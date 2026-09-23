@@ -3,3 +3,4 @@ dist
 package-lock.json
 .test-artifacts
 test-results
+storage

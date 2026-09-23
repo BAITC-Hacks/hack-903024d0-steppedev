@@ -32,7 +32,7 @@ Other scenarios include increased forecast uncertainty and historical mode. Fore
 
 This is a frontend demo. The operating clock is fixed to **23 September 2026, UTC**. Weather data, model results, explanation drivers, archive matches, and agent actions are simulated. Diagnostics explicitly labels example validation metrics. No Python inference runs in the browser.
 
-All model fixture generation lives in `src/data/`. UI requests go through `src/services/api.ts`; replace the mock adapters with typed HTTP requests:
+All model fixture generation lives in `frontend/src/data/`. UI requests go through `frontend/src/services/api.ts`; replace the mock adapters with typed HTTP requests:
 
 | Service                         | Future endpoint          |
 | ------------------------------- | ------------------------ |
@@ -46,26 +46,32 @@ All model fixture generation lives in `src/data/`. UI requests go through `src/s
 
 Forecast values and ranges remain in **0–1** units in the service contract, then display as percentages. Confidence is an operational system indicator, not a statistical probability. Replay checks fixture issue timestamps; genuine leakage protection must also be enforced by the eventual archive/backend. The copilot uses deterministic data-grounded answers; no LLM is connected.
 
-The existing `weather_api.py` is preserved and is not invoked by the frontend.
+The Python modules now live under `backend/windops/`. The existing weather client, preparation pipeline, training code and agent are separate from the frontend. See [backend setup and commands](backend/README.md).
 
 ## Structure
 
 ```text
-src/
-  components/   layout, charts, turbine, agent, forecast, confidence, ui
-  pages/        Overview, Forecast, TurbineTwin, Agent, HistoricalReplay, Diagnostics
-  data/         deterministic fixtures and scenario definitions
-  services/     typed API adapters and copilot response service
-  state/        shared operations state and demo orchestration
-  types/        forecast, turbine, agent contracts
-tests/          browser interaction and responsive checks
+frontend/
+  src/          React UI, pages, fixtures, services, state and types
+  public/       static assets
+  tests/        browser interaction and responsive checks
+backend/
+  windops/      core, data, weather, ml, agent and future API layer
+  tests/        Python tests
+storage/        local datasets, trained models, weather archives and exports
+docs/           architecture and requirements
 ```
+
+Frontend tooling and npm commands remain at the repository root. See the [structure and migration map](docs/ARCHITECTURE.md), [frontend guide](frontend/README.md), and [storage instructions](storage/README.md).
+
+Large data and model files are kept locally in `storage/` and excluded from Git. Existing files were moved without altering their contents. Python storage paths are independent of the working directory and can be overridden with `WINDOPS_STORAGE_DIR`.
 
 ## Checks
 
 ```sh
 npm run build
 npm test
+python -m unittest discover -s backend/tests -t .
 npx playwright install chromium
 npm run test:e2e
 ```

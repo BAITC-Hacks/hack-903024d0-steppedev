@@ -3,18 +3,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ..core.paths import RAW_DATA_DIR, PROCESSED_DIR
+
 
 # ============================================================
 # ПУТИ
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-PROCESSED_DIR = DATA_DIR / "processed"
-
 FILES = {
-    "WT_1": DATA_DIR / "turbine_1.csv",
-    "WT_2": DATA_DIR / "turbine_2.csv",
+    "WT_1": RAW_DATA_DIR / "turbine_1.csv",
+    "WT_2": RAW_DATA_DIR / "turbine_2.csv",
 }
 
 
@@ -190,8 +188,8 @@ def prepare_training_data() -> pd.DataFrame:
         raise FileNotFoundError(
             "Не найдены исходные CSV-файлы турбин:\n"
             f"{missing_files}\n"
-            "Поместите turbine_1.csv и turbine_2.csv в папку data рядом "
-            "со скриптом или укажите их пути в FILES. "
+            f"Поместите turbine_1.csv и turbine_2.csv в {RAW_DATA_DIR} "
+            "или настройте WINDOPS_STORAGE_DIR. "
             "Нужны исторические измерения, включая мощность; "
             "wind_forecast.csv с прогнозом погоды не подходит."
         )

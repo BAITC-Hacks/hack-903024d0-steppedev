@@ -1,9 +1,9 @@
 """Текущий прогноз Open-Meteo для двух турбин; НЕ исторический backtest.
 
 Установка: python -m pip install requests pandas tzdata
-Запуск:     python weather_live.py
+Запуск из корня: python -m backend.windops.weather.client
 
-В weather_snapshots/<время_получения>/ сохраняются response.json и
+В storage/weather/<время_получения>/ сохраняются response.json и
 wind_forecast.csv. Исходный ответ сохраняется до проверки данных.
 Время получения ответа НЕ является временем выпуска погодной модели.
 Документация: https://open-meteo.com/en/docs
@@ -18,6 +18,8 @@ import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from ..core.paths import WEATHER_DIR
 
 API_URL = "https://api.open-meteo.com/v1/forecast"
 LOCAL_TIMEZONE = "Asia/Almaty"
@@ -98,7 +100,7 @@ def parse_weather(payload: Any, expected: pd.DatetimeIndex,
     return pd.concat(frames, ignore_index=True)
 
 
-def get_all_weather(output_dir: Path | str = "weather_snapshots") -> tuple[pd.DataFrame, Path]:
+def get_all_weather(output_dir: Path | str = WEATHER_DIR) -> tuple[pd.DataFrame, Path]:
     started_at = utc_now()
     # Явное окно: 48 часовых отметок с начала следующего часа.
     first_hour = started_at.floor("h") + pd.Timedelta(hours=1)

@@ -1,4 +1,3 @@
-from pathlib import Path
 import json
 
 import numpy as np
@@ -11,13 +10,14 @@ from sklearn.metrics import (
     r2_score,
 )
 
+from ..core.paths import MODEL_DIR, PROCESSED_DIR
+
 
 # ============================================================
 # PATHS
 # ============================================================
 
-DATA_PATH = Path("data/processed/hourly_training.csv")
-MODEL_DIR = Path("models")
+DATA_PATH = PROCESSED_DIR / "hourly_training.csv"
 
 VALIDATION_MODEL_PATH = MODEL_DIR / "catboost_validation.cbm"
 FINAL_MODEL_PATH = MODEL_DIR / "catboost_power.cbm"

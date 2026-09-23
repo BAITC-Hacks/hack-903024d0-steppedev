@@ -1,0 +1,7 @@
+# Dependencies imported by the existing Python modules.
+numpy
+pandas
+requests
+tzdata
+catboost
+scikit-learn
